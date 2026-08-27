@@ -59,7 +59,7 @@ const DEFAULT: Form = {
 function Sidebar({ step, onStep }: { step: number; onStep: (n: number) => void }) {
   return (
     <aside
-      className="flex flex-col h-full select-none"
+      className="hidden lg:flex flex-col h-full select-none flex-shrink-0"
       style={{ width: 228, background: "#0d0b1a", borderRight: "1px solid rgba(255,255,255,0.06)" }}
     >
       {/* Branding */}
@@ -155,6 +155,68 @@ function Sidebar({ step, onStep }: { step: number; onStep: (n: number) => void }
   )
 }
 
+/* ─── Mobile top bar (branding + steps) ────── */
+
+function MobileTopBar({ step, onStep }: { step: number; onStep: (n: number) => void }) {
+  return (
+    <div className="flex lg:hidden flex-col select-none flex-shrink-0" style={{ background: "#0d0b1a" }}>
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(135deg,#5b3df5,#7c5cfc)" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+              <path d="M2 10.5L5 4l3.5 5L11 6l1.5 4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <p className="text-white text-[13px] font-semibold leading-none">GuideGen</p>
+        </div>
+        <p className="text-white/30 text-[10px] flex-shrink-0">Étape {step + 1}/{STEPS.length}</p>
+      </div>
+      <div className="flex gap-1.5 px-3 pb-3 overflow-x-auto">
+        {STEPS.map((s, i) => {
+          const done = i < step
+          const active = i === step
+          return (
+            <button
+              key={i}
+              onClick={() => onStep(i)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full flex-shrink-0 transition-all duration-150"
+              style={active ? { background: "rgba(91,61,245,0.18)" } : {}}
+            >
+              <div
+                className="w-[16px] h-[16px] rounded-full flex items-center justify-center flex-shrink-0 text-[8px] font-bold"
+                style={
+                  done
+                    ? { background: "#5b3df5", color: "white" }
+                    : active
+                    ? { background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", color: "white" }
+                    : { background: "#1e1a30", color: "rgba(255,255,255,0.25)", border: "1px solid rgba(255,255,255,0.08)" }
+                }
+              >
+                {done ? (
+                  <svg width="7" height="7" viewBox="0 0 9 9" fill="none">
+                    <path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  i + 1
+                )}
+              </div>
+              <span
+                className="text-[11px] font-medium whitespace-nowrap"
+                style={active ? { color: "white" } : done ? { color: "rgba(255,255,255,0.5)" } : { color: "rgba(255,255,255,0.3)" }}
+              >
+                {s.label}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Field ────────────────────────────────── */
 
 function Field({
@@ -236,7 +298,7 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
         title="Choisissez un thème"
         sub="La palette de couleurs détermine l'identité visuelle complète de votre guide PDF."
       />
-      <div className="grid grid-cols-4 gap-2.5 mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-6">
         {THEMES.map((t) => {
           const sel = t.id === selected
           return (
@@ -324,11 +386,11 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
       </div>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Nom de marque" value={form.brandName} onChange={(v) => update({ brandName: v })} placeholder="Académie Pro" valid={form.brandName.trim().length >= 2} touched={touched} />
           <Field label="Accroche" value={form.tagline} onChange={(v) => update({ tagline: v })} placeholder="Votre succès…" valid={form.tagline.trim().length >= 2} touched={touched} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Titre du guide" value={form.guideName} onChange={(v) => update({ guideName: v })} placeholder="Guide de démarrage" valid={form.guideName.trim().length >= 2} touched={touched} />
           <Field label="Sous-titre" value={form.guideSubtitle} onChange={(v) => update({ guideSubtitle: v })} placeholder="En 3 étapes simples" valid={form.guideSubtitle.trim().length >= 2} touched={touched} />
         </div>
@@ -686,6 +748,7 @@ export default function App() {
   const [form, setForm] = useState<Form>(DEFAULT)
   const [touched, setTouched] = useState(false)
   const [done, setDone] = useState(false)
+  const [mobileView, setMobileView] = useState<"form" | "preview">("form")
 
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0]
   const update = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }))
@@ -699,96 +762,123 @@ export default function App() {
   const download = () => { setDone(true); setTimeout(() => setDone(false), 3500) }
 
   return (
-    <div className="flex h-full" style={{ fontFamily: "'DM Sans', sans-serif", background: "#f8f8fa" }}>
+    <div className="flex flex-col lg:flex-row h-full" style={{ fontFamily: "'DM Sans', sans-serif", background: "#f8f8fa" }}>
 
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar (desktop only) ── */}
       <Sidebar step={step} onStep={setStep} />
 
-      {/* ── Form panel ── */}
-      <div className="flex flex-col h-full" style={{ width: 520, borderRight: "1px solid #ebebef", background: "white" }}>
-        {/* Header bar */}
-        <div className="flex items-center justify-between px-8 py-4 border-b" style={{ borderColor: "#ebebef" }}>
-          <div>
-            <p className="text-[13px] font-semibold text-gray-900">Générateur de guide</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              Étape {step + 1} sur {STEPS.length} · {STEPS[step].label}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {STEPS.map((_, i) => (
-              <div
-                key={i}
-                className="rounded-full transition-all duration-300"
-                style={{
-                  width: i === step ? 20 : 6,
-                  height: 6,
-                  background: i < step ? "#5b3df5" : i === step ? "#5b3df5" : "#e4e4e7",
-                }}
-              />
-            ))}
-          </div>
-        </div>
+      {/* ── Mobile top bar (branding + steps) ── */}
+      <MobileTopBar step={step} onStep={setStep} />
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-8 py-7">
-          {step === 0 && <StepTheme selected={themeId} onSelect={setThemeId} />}
-          {step === 1 && <StepInfo form={form} update={update} touched={touched} />}
-          {step === 2 && <StepContacts form={form} update={update} touched={touched} />}
-          {step === 3 && <StepGeneration theme={theme} onDownload={download} done={done} />}
-        </div>
-
-        {/* Footer nav */}
-        <div className="flex items-center justify-between px-8 py-4 border-t" style={{ borderColor: "#ebebef" }}>
+      {/* ── Mobile Formulaire / Aperçu switcher ── */}
+      <div className="flex lg:hidden items-center gap-2 px-4 py-2.5 border-b flex-shrink-0" style={{ borderColor: "#ebebef", background: "white" }}>
+        {(["form", "preview"] as const).map((v) => (
           <button
-            onClick={back}
-            disabled={step === 0}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all duration-150 disabled:opacity-30 disabled:pointer-events-none"
+            key={v}
+            onClick={() => setMobileView(v)}
+            className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold transition-all duration-150"
+            style={
+              mobileView === v
+                ? { background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", color: "white" }
+                : { background: "#f4f4f6", color: "#6b7280" }
+            }
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Précédent
+            {v === "form" ? "Formulaire" : "Aperçu"}
           </button>
-
-          {step < STEPS.length - 1 && (
-            <button
-              onClick={next}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
-              style={{ background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", boxShadow: "0 2px 12px rgba(91,61,245,0.35)" }}
-            >
-              Suivant
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M5 3l4 4-4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          )}
-        </div>
+        ))}
       </div>
 
-      {/* ── Preview panel ── */}
-      <div className="flex flex-col flex-1 h-full overflow-hidden">
-        {/* Preview header */}
-        <div className="flex items-center justify-between px-7 py-4 border-b" style={{ borderColor: "#ebebef", background: "#fafafa" }}>
-          <div className="flex items-center gap-2.5">
-            <p className="text-[13px] font-semibold text-gray-700">Aperçu du guide</p>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ background: "#dcfce7", color: "#16a34a" }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              En direct
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+
+        {/* ── Form panel ── */}
+        <div
+          className={`${mobileView === "preview" ? "hidden" : "flex"} lg:flex flex-col w-full lg:w-[520px] flex-shrink-0 min-h-0`}
+          style={{ borderRight: "1px solid #ebebef", background: "white" }}
+        >
+          {/* Header bar */}
+          <div className="hidden lg:flex items-center justify-between px-4 sm:px-8 py-4 border-b flex-shrink-0" style={{ borderColor: "#ebebef" }}>
+            <div>
+              <p className="text-[13px] font-semibold text-gray-900">Générateur de guide</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Étape {step + 1} sur {STEPS.length} · {STEPS[step].label}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === step ? 20 : 6,
+                    height: 6,
+                    background: i < step ? "#5b3df5" : i === step ? "#5b3df5" : "#e4e4e7",
+                  }}
+                />
+              ))}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 border border-gray-200 bg-white">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <rect x="1" y="1" width="10" height="10" rx="1" stroke="#a1a1aa" strokeWidth="1.2" />
-              <path d="M1 4.5h10" stroke="#a1a1aa" strokeWidth="1.2" />
-            </svg>
-            Format A4
+
+          {/* Scrollable content */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6 sm:py-7">
+            {step === 0 && <StepTheme selected={themeId} onSelect={setThemeId} />}
+            {step === 1 && <StepInfo form={form} update={update} touched={touched} />}
+            {step === 2 && <StepContacts form={form} update={update} touched={touched} />}
+            {step === 3 && <StepGeneration theme={theme} onDownload={download} done={done} />}
+          </div>
+
+          {/* Footer nav */}
+          <div className="flex items-center justify-between px-4 sm:px-8 py-4 border-t flex-shrink-0" style={{ borderColor: "#ebebef" }}>
+            <button
+              onClick={back}
+              disabled={step === 0}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all duration-150 disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Précédent
+            </button>
+
+            {step < STEPS.length - 1 && (
+              <button
+                onClick={next}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
+                style={{ background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", boxShadow: "0 2px 12px rgba(91,61,245,0.35)" }}
+              >
+                Suivant
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3l4 4-4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Scrollable preview */}
-        <div className="flex-1 overflow-y-auto p-7" style={{ background: "#f3f3f7" }}>
-          <PDFPreview form={form} theme={theme} />
-          <div className="h-8" />
+        {/* ── Preview panel ── */}
+        <div className={`${mobileView === "form" ? "hidden" : "flex"} lg:flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden`}>
+          {/* Preview header */}
+          <div className="flex items-center justify-between flex-wrap gap-2 px-4 sm:px-7 py-4 border-b flex-shrink-0" style={{ borderColor: "#ebebef", background: "#fafafa" }}>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <p className="text-[13px] font-semibold text-gray-700">Aperçu du guide</p>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ background: "#dcfce7", color: "#16a34a" }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                En direct
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 border border-gray-200 bg-white">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="1" y="1" width="10" height="10" rx="1" stroke="#a1a1aa" strokeWidth="1.2" />
+                <path d="M1 4.5h10" stroke="#a1a1aa" strokeWidth="1.2" />
+              </svg>
+              Format A4
+            </div>
+          </div>
+
+          {/* Scrollable preview */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-7" style={{ background: "#f3f3f7" }}>
+            <PDFPreview form={form} theme={theme} />
+            <div className="h-8" />
+          </div>
         </div>
       </div>
     </div>
