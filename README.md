@@ -71,6 +71,18 @@ git commit -m "Description des changements"
 git push
 ```
 
+## Publier en ligne avec GitHub Pages
+
+Ce projet inclut un workflow GitHub Actions (`.github/workflows/deploy.yml`) qui construit et publie automatiquement le site à chaque `push` sur `main`.
+
+1. Sur GitHub, va dans **Settings → Pages** de ton dépôt.
+2. Sous "Build and deployment", choisis **Source : GitHub Actions**.
+3. Vérifie que le nom du dépôt correspond bien à la ligne `base: '/guidegen/'` dans `vite.config.ts`. Si ton dépôt s'appelle autrement (ex. `mon-projet`), remplace cette ligne par `base: '/mon-projet/'`.
+4. Fais un `git push` — l'onglet **Actions** du dépôt te montre la progression du déploiement.
+5. Une fois terminé (coche verte), ton site est accessible à `https://TON-UTILISATEUR.github.io/guidegen/`.
+
+⚠️ Ne publie jamais directement les fichiers sources (`src/`, etc.) comme "site" — le navigateur ne peut pas exécuter du TypeScript/React brut. Il faut toujours passer par le build (`npm run build`), ce que le workflow fait automatiquement.
+
 ## Structure du projet
 
 ```
