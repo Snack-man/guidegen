@@ -174,7 +174,7 @@ function MobileTopBar({ step, onStep }: { step: number; onStep: (n: number) => v
         </div>
         <p className="text-white/30 text-[10px] flex-shrink-0">Étape {step + 1}/{STEPS.length}</p>
       </div>
-      <div className="flex gap-1.5 px-3 pb-3 overflow-x-auto">
+      <div className="flex gap-1.5 px-3 pb-3 scroll-x">
         {STEPS.map((s, i) => {
           const done = i < step
           const active = i === step
@@ -819,7 +819,7 @@ export default function App() {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6 sm:py-7">
+          <div className="flex-1 min-h-0 scroll-y px-4 sm:px-8 py-6 sm:py-7">
             {step === 0 && <StepTheme selected={themeId} onSelect={setThemeId} />}
             {step === 1 && <StepInfo form={form} update={update} touched={touched} />}
             {step === 2 && <StepContacts form={form} update={update} touched={touched} />}
@@ -875,7 +875,7 @@ export default function App() {
           </div>
 
           {/* Scrollable preview */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-7" style={{ background: "#f3f3f7" }}>
+          <div className="flex-1 min-h-0 scroll-y p-4 sm:p-7" style={{ background: "#f3f3f7" }}>
             <PDFPreview form={form} theme={theme} />
             <div className="h-8" />
           </div>

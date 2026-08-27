@@ -1,9 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 @import 'tailwindcss';
 
-html, body, #root {
+html, body {
   height: 100%;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100vh;   /* fallback pour anciens navigateurs mobiles */
+  height: 100dvh;  /* hauteur réelle du viewport visible, tient compte de la barre d'adresse / clavier */
   overflow: hidden;
+}
+
+/* Zones destinées à défiler : on force un défilement fluide et fiable sur mobile
+   (le scroll imbriqué dans un flex peut sinon rester bloqué sur certains navigateurs). */
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 
 * {
