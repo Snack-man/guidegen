@@ -1,4 +1,6 @@
 import { useState, useRef, type ChangeEvent } from "react"
+import { jsPDF } from "jspdf"
+import html2canvas from "html2canvas"
 
 /* ─── Types ────────────────────────────────── */
 
@@ -7,15 +9,18 @@ type ThemeCfg = {
   from: string; to: string; accent: string; light: string
 }
 
+type GuideStep = { id: string; title: string; desc: string }
+
 type Form = {
   brandName: string; tagline: string
   guideName: string; guideSubtitle: string
-  s1t: string; s1d: string
-  s2t: string; s2d: string
-  s3t: string; s3d: string
+  steps: GuideStep[]
   whatsapp: string; telegram: string; email: string
   logo: string | null
 }
+
+let stepUid = 0
+const newStepId = () => `step-${Date.now()}-${stepUid++}`
 
 /* ─── Data ─────────────────────────────────── */
 
@@ -42,12 +47,11 @@ const DEFAULT: Form = {
   tagline: "Votre succès, notre mission",
   guideName: "Guide de Démarrage Rapide",
   guideSubtitle: "Commencez votre parcours en 3 étapes simples",
-  s1t: "Accédez à votre espace",
-  s1d: "Connectez-vous et découvrez l'ensemble de vos formations disponibles en un seul endroit.",
-  s2t: "Suivez votre programme",
-  s2d: "Progressez à votre rythme avec des modules interactifs pensés pour maximiser votre apprentissage.",
-  s3t: "Obtenez votre certificat",
-  s3d: "Validez vos acquis et téléchargez un certificat reconnu par les professionnels du secteur.",
+  steps: [
+    { id: "step-default-1", title: "Accédez à votre espace", desc: "Connectez-vous et découvrez l'ensemble de vos formations disponibles en un seul endroit." },
+    { id: "step-default-2", title: "Suivez votre programme", desc: "Progressez à votre rythme avec des modules interactifs pensés pour maximiser votre apprentissage." },
+    { id: "step-default-3", title: "Obtenez votre certificat", desc: "Validez vos acquis et téléchargez un certificat reconnu par les professionnels du secteur." },
+  ],
   whatsapp: "+33 6 12 34 56 78",
   telegram: "@academie_pro",
   email: "bonjour@academie-pro.fr",
@@ -398,27 +402,59 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
       </div>
 
       <div className="mt-5 pt-5 border-t border-gray-100">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Contenu des étapes</p>
-        <div className="space-y-3">
-          {([
-            ["Étape 1 — Titre", "s1t", form.s1t, false],
-            ["Étape 1 — Description", "s1d", form.s1d, true],
-            ["Étape 2 — Titre", "s2t", form.s2t, false],
-            ["Étape 2 — Description", "s2d", form.s2d, true],
-            ["Étape 3 — Titre", "s3t", form.s3t, false],
-            ["Étape 3 — Description", "s3d", form.s3d, true],
-          ] as const).map(([label, key, val, multi]) => (
-            <Field
-              key={key}
-              label={label}
-              value={val}
-              onChange={(v) => update({ [key]: v })}
-              multiline={multi}
-              valid={val.trim().length >= 4}
-              touched={touched}
-            />
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Contenu des étapes</p>
+          <span className="text-[11px] text-gray-300">{form.steps.length} étape{form.steps.length > 1 ? "s" : ""}</span>
+        </div>
+        <div className="space-y-4">
+          {form.steps.map((s, i) => (
+            <div key={s.id} className="rounded-xl border border-gray-100 bg-gray-50/40 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-bold text-violet-500">Étape {i + 1}</span>
+                {form.steps.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => update({ steps: form.steps.filter((_, idx) => idx !== i) })}
+                    className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors duration-150"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    </svg>
+                    Supprimer
+                  </button>
+                )}
+              </div>
+              <div className="space-y-3">
+                <Field
+                  label="Titre"
+                  value={s.title}
+                  onChange={(v) => update({ steps: form.steps.map((st, idx) => idx === i ? { ...st, title: v } : st) })}
+                  valid={s.title.trim().length >= 4}
+                  touched={touched}
+                />
+                <Field
+                  label="Description"
+                  value={s.desc}
+                  onChange={(v) => update({ steps: form.steps.map((st, idx) => idx === i ? { ...st, desc: v } : st) })}
+                  multiline
+                  valid={s.desc.trim().length >= 4}
+                  touched={touched}
+                />
+              </div>
+            </div>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={() => update({ steps: [...form.steps, { id: newStepId(), title: "", desc: "" }] })}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-gray-300 text-[13px] font-medium text-violet-600 hover:border-violet-300 hover:bg-violet-50/40 transition-all duration-150"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+          Ajouter une étape
+        </button>
       </div>
     </div>
   )
@@ -475,7 +511,7 @@ function StepContacts({ form, update, touched }: { form: Form; update: (p: Parti
 
 /* ─── Step 3: Generation ───────────────────── */
 
-function StepGeneration({ theme, onDownload, done }: { theme: ThemeCfg; onDownload: () => void; done: boolean }) {
+function StepGeneration({ theme, stepCount, onDownload, status }: { theme: ThemeCfg; stepCount: number; onDownload: () => void; status: "idle" | "generating" | "done" | "error" }) {
   return (
     <div>
       <SectionHeader
@@ -491,7 +527,7 @@ function StepGeneration({ theme, onDownload, done }: { theme: ThemeCfg; onDownlo
             {[
               ["Thème", theme.name],
               ["Format", "PDF A4 · Portrait"],
-              ["Étapes", "3 étapes incluses"],
+              ["Étapes", `${stepCount} étape${stepCount > 1 ? "s" : ""} incluse${stepCount > 1 ? "s" : ""}`],
               ["Contacts", "WhatsApp · Telegram · Email"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between">
@@ -529,19 +565,38 @@ function StepGeneration({ theme, onDownload, done }: { theme: ThemeCfg; onDownlo
         {/* Download button */}
         <button
           onClick={onDownload}
-          className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-white transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2.5"
+          disabled={status === "generating"}
+          className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-white transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-70"
           style={
-            done
+            status === "done"
               ? { background: "#16a34a", boxShadow: "0 4px 16px rgba(22,163,74,0.3)" }
+              : status === "error"
+              ? { background: "#dc2626", boxShadow: "0 4px 16px rgba(220,38,38,0.3)" }
               : { background: `linear-gradient(135deg, ${theme.from}, ${theme.to})`, boxShadow: `0 4px 20px ${theme.accent}40` }
           }
         >
-          {done ? (
+          {status === "done" ? (
             <>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M2 8l4 4 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Guide généré avec succès
+            </>
+          ) : status === "generating" ? (
+            <>
+              <svg width="16" height="16" viewBox="0 0 16 16" className="animate-spin">
+                <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.3)" strokeWidth="2" fill="none" />
+                <path d="M14.5 8a6.5 6.5 0 0 0-6.5-6.5" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+              </svg>
+              Génération en cours…
+            </>
+          ) : status === "error" ? (
+            <>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 5v4M8 11.5v.01" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="8" cy="8" r="6.5" stroke="white" strokeWidth="1.4" fill="none" />
+              </svg>
+              Échec — réessayer
             </>
           ) : (
             <>
@@ -572,11 +627,7 @@ function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string
 /* ─── PDF Preview ──────────────────────────── */
 
 function PDFPreview({ form, theme }: { form: Form; theme: ThemeCfg }) {
-  const items = [
-    { n: "01", t: form.s1t, d: form.s1d },
-    { n: "02", t: form.s2t, d: form.s2d },
-    { n: "03", t: form.s3t, d: form.s3d },
-  ]
+  const items = form.steps.map((s, i) => ({ n: String(i + 1).padStart(2, "0"), t: s.title, d: s.desc }))
 
   return (
     <div
@@ -748,8 +799,9 @@ export default function App() {
   const [themeId, setThemeId] = useState("violet")
   const [form, setForm] = useState<Form>(DEFAULT)
   const [touched, setTouched] = useState(false)
-  const [done, setDone] = useState(false)
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle")
   const [mobileView, setMobileView] = useState<"form" | "preview">("form")
+  const exportRef = useRef<HTMLDivElement>(null)
 
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0]
   const update = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }))
@@ -760,7 +812,50 @@ export default function App() {
   }
   const back = () => { setStep((s) => Math.max(0, s - 1)); setTouched(false) }
 
-  const download = () => { setDone(true); setTimeout(() => setDone(false), 3500) }
+  const download = async () => {
+    if (status === "generating" || !exportRef.current) return
+    setStatus("generating")
+    try {
+      // Laisse le DOM se peindre avant la capture
+      await new Promise((r) => setTimeout(r, 50))
+
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      })
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95)
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pageWidth
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+      let heightLeft = imgHeight
+      let position = 0
+
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      const filename = `${form.guideName || "guide"}.pdf`.trim().replace(/\s+/g, "-").toLowerCase()
+      pdf.save(filename)
+
+      setStatus("done")
+      setTimeout(() => setStatus("idle"), 3500)
+    } catch (err) {
+      console.error("Échec de la génération du PDF :", err)
+      setStatus("error")
+      setTimeout(() => setStatus("idle"), 3500)
+    }
+  }
 
   return (
     <div className="flex flex-col lg:flex-row h-full" style={{ fontFamily: "'DM Sans', sans-serif", background: "#f8f8fa" }}>
@@ -824,7 +919,7 @@ export default function App() {
             {step === 0 && <StepTheme selected={themeId} onSelect={setThemeId} />}
             {step === 1 && <StepInfo form={form} update={update} touched={touched} />}
             {step === 2 && <StepContacts form={form} update={update} touched={touched} />}
-            {step === 3 && <StepGeneration theme={theme} onDownload={download} done={done} />}
+            {step === 3 && <StepGeneration theme={theme} stepCount={form.steps.length} onDownload={download} status={status} />}
           </div>
 
           {/* Footer nav */}
@@ -880,6 +975,13 @@ export default function App() {
             <PDFPreview form={form} theme={theme} />
             <div className="h-8" />
           </div>
+        </div>
+      </div>
+
+      {/* Rendu hors-écran utilisé pour la capture du PDF (toujours monté, même si l'aperçu visible est masqué) */}
+      <div style={{ position: "fixed", top: 0, left: -99999, width: 794, pointerEvents: "none" }} aria-hidden="true">
+        <div ref={exportRef} style={{ width: 794 }}>
+          <PDFPreview form={form} theme={theme} />
         </div>
       </div>
     </div>
