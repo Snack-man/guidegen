@@ -174,7 +174,7 @@ function MobileTopBar({ step, onStep }: { step: number; onStep: (n: number) => v
         </div>
         <p className="text-white/30 text-[10px] flex-shrink-0">Étape {step + 1}/{STEPS.length}</p>
       </div>
-      <div className="flex gap-1.5 px-3 pb-3 scroll-x">
+      <div className="flex gap-1.5 px-3 pb-3 scroll-x" style={{ scrollPaddingRight: 12 }}>
         {STEPS.map((s, i) => {
           const done = i < step
           const active = i === step
@@ -212,6 +212,7 @@ function MobileTopBar({ step, onStep }: { step: number; onStep: (n: number) => v
             </button>
           )
         })}
+        <div className="flex-shrink-0 w-1" aria-hidden="true" />
       </div>
     </div>
   )
@@ -792,7 +793,7 @@ export default function App() {
 
         {/* ── Form panel ── */}
         <div
-          className={`${mobileView === "preview" ? "hidden" : "flex"} lg:flex flex-col w-full lg:w-[520px] flex-shrink-0 min-h-0`}
+          className={`${mobileView === "preview" ? "hidden" : "flex"} lg:flex flex-col w-full lg:w-[520px] min-h-0 lg:flex-shrink-0`}
           style={{ borderRight: "1px solid #ebebef", background: "white" }}
         >
           {/* Header bar */}
