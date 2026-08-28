@@ -9,7 +9,7 @@ type ThemeCfg = {
   from: string; to: string; accent: string; light: string
 }
 
-type GuideStep = { id: string; title: string; desc: string }
+type GuideStep = { id: string; title: string; desc: string; photo: string | null }
 
 type Form = {
   brandName: string; tagline: string
@@ -21,6 +21,36 @@ type Form = {
 
 let stepUid = 0
 const newStepId = () => `step-${Date.now()}-${stepUid++}`
+
+/**
+ * Lit un fichier image et le redimensionne côté client (largeur max + compression JPEG)
+ * avant de le convertir en data URL. Évite que des photos importées en haute résolution
+ * fassent exploser le poids du PDF généré (capture html2canvas + jsPDF).
+ */
+function resizeImageFile(file: File, maxWidth = 900, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error("Lecture du fichier impossible"))
+    reader.onload = () => {
+      const img = new Image()
+      img.onerror = () => reject(new Error("Fichier image invalide"))
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width)
+        const w = Math.max(1, Math.round(img.width * scale))
+        const h = Math.max(1, Math.round(img.height * scale))
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext("2d")
+        if (!ctx) { resolve(reader.result as string); return }
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL("image/jpeg", quality))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
 
 /* ─── Data ─────────────────────────────────── */
 
@@ -48,9 +78,9 @@ const DEFAULT: Form = {
   guideName: "Guide de Démarrage Rapide",
   guideSubtitle: "Commencez votre parcours en 3 étapes simples",
   steps: [
-    { id: "step-default-1", title: "Accédez à votre espace", desc: "Connectez-vous et découvrez l'ensemble de vos formations disponibles en un seul endroit." },
-    { id: "step-default-2", title: "Suivez votre programme", desc: "Progressez à votre rythme avec des modules interactifs pensés pour maximiser votre apprentissage." },
-    { id: "step-default-3", title: "Obtenez votre certificat", desc: "Validez vos acquis et téléchargez un certificat reconnu par les professionnels du secteur." },
+    { id: "step-default-1", title: "Accédez à votre espace", desc: "Connectez-vous et découvrez l'ensemble de vos formations disponibles en un seul endroit.", photo: null },
+    { id: "step-default-2", title: "Suivez votre programme", desc: "Progressez à votre rythme avec des modules interactifs pensés pour maximiser votre apprentissage.", photo: null },
+    { id: "step-default-3", title: "Obtenez votre certificat", desc: "Validez vos acquis et téléchargez un certificat reconnu par les professionnels du secteur.", photo: null },
   ],
   whatsapp: "+33 6 12 34 56 78",
   telegram: "@academie_pro",
@@ -419,6 +449,119 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
   )
 }
 
+/* ─── Carte d'étape (titre, description, photo) ─── */
+
+function StepCard({
+  step, index, canRemove, touched, onChange, onRemove,
+}: {
+  step: GuideStep; index: number; canRemove: boolean; touched: boolean
+  onChange: (patch: Partial<GuideStep>) => void
+  onRemove: () => void
+}) {
+  const { c } = useUITheme()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const handlePhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    e.target.value = ""
+    if (!f) return
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const dataUrl = await resizeImageFile(f)
+      onChange({ photo: dataUrl })
+    } catch (err) {
+      console.error("Échec de l'import de la photo d'étape :", err)
+      setUploadError("Impossible de charger cette image.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border p-4" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-bold text-violet-500">Étape {index + 1}</span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="flex items-center gap-1 text-[11px] font-medium hover:text-red-500 transition-colors duration-150"
+            style={{ color: c.text400 }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+            Supprimer
+          </button>
+        )}
+      </div>
+      <div className="space-y-3">
+        <Field
+          label="Titre"
+          value={step.title}
+          onChange={(v) => onChange({ title: v })}
+          valid={step.title.trim().length >= 4}
+          touched={touched}
+        />
+        <Field
+          label="Description"
+          value={step.desc}
+          onChange={(v) => onChange({ desc: v })}
+          multiline
+          valid={step.desc.trim().length >= 4}
+          touched={touched}
+        />
+
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: c.text400 }}>
+            Photo (optionnel)
+          </label>
+          <div
+            onClick={() => !uploading && fileRef.current?.click()}
+            className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-dashed hover:border-violet-300 cursor-pointer transition-all duration-150"
+            style={{ borderColor: c.fieldBorder, background: c.fieldBg }}
+          >
+            {step.photo ? (
+              <img src={step.photo} alt="" className="h-10 w-14 rounded-md object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: c.mutedBg2, border: `1px solid ${c.fieldBorder}` }}>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="#a1a1aa" strokeWidth="1.3" />
+                  <circle cx="5.5" cy="6.5" r="1.2" fill="#a1a1aa" />
+                  <path d="M2 11.5l3.5-3.5 2.5 2.5 2-2L14 12" stroke="#a1a1aa" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[12.5px] font-medium truncate" style={{ color: c.text700 }}>
+                {uploading ? "Import en cours…" : step.photo ? "Photo importée · cliquer pour changer" : "Ajouter une illustration"}
+              </p>
+              <p className="text-[10.5px]" style={{ color: c.text400 }}>PNG, JPG — redimensionnée automatiquement</p>
+            </div>
+            {step.photo && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onChange({ photo: null }) }}
+                className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center hover:bg-red-50 transition-colors duration-150"
+                aria-label="Retirer la photo de cette étape"
+              >
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 2l8 8M10 2l-8 8" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+          </div>
+          {uploadError && <p className="text-[11px] mt-1" style={{ color: "#ef4444" }}>{uploadError}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Step 1: Info Form ────────────────────── */
 
 function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<Form>) => void; touched: boolean }) {
@@ -485,47 +628,21 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
         </div>
         <div className="space-y-4">
           {form.steps.map((s, i) => (
-            <div key={s.id} className="rounded-xl border p-4" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold text-violet-500">Étape {i + 1}</span>
-                {form.steps.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => update({ steps: form.steps.filter((_, idx) => idx !== i) })}
-                    className="flex items-center gap-1 text-[11px] font-medium hover:text-red-500 transition-colors duration-150"
-                    style={{ color: c.text400 }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    </svg>
-                    Supprimer
-                  </button>
-                )}
-              </div>
-              <div className="space-y-3">
-                <Field
-                  label="Titre"
-                  value={s.title}
-                  onChange={(v) => update({ steps: form.steps.map((st, idx) => idx === i ? { ...st, title: v } : st) })}
-                  valid={s.title.trim().length >= 4}
-                  touched={touched}
-                />
-                <Field
-                  label="Description"
-                  value={s.desc}
-                  onChange={(v) => update({ steps: form.steps.map((st, idx) => idx === i ? { ...st, desc: v } : st) })}
-                  multiline
-                  valid={s.desc.trim().length >= 4}
-                  touched={touched}
-                />
-              </div>
-            </div>
+            <StepCard
+              key={s.id}
+              step={s}
+              index={i}
+              canRemove={form.steps.length > 1}
+              touched={touched}
+              onChange={(patch) => update({ steps: form.steps.map((st, idx) => idx === i ? { ...st, ...patch } : st) })}
+              onRemove={() => update({ steps: form.steps.filter((_, idx) => idx !== i) })}
+            />
           ))}
         </div>
 
         <button
           type="button"
-          onClick={() => update({ steps: [...form.steps, { id: newStepId(), title: "", desc: "" }] })}
+          onClick={() => update({ steps: [...form.steps, { id: newStepId(), title: "", desc: "", photo: null }] })}
           className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed text-[13px] font-medium text-violet-600 hover:border-violet-300 transition-all duration-150"
           style={{ borderColor: c.text300 }}
         >
@@ -709,7 +826,7 @@ function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string
 /* ─── PDF Preview ──────────────────────────── */
 
 function PDFPreview({ form, theme }: { form: Form; theme: ThemeCfg }) {
-  const items = form.steps.map((s, i) => ({ n: String(i + 1).padStart(2, "0"), t: s.title, d: s.desc }))
+  const items = form.steps.map((s, i) => ({ n: String(i + 1).padStart(2, "0"), t: s.title, d: s.desc, photo: s.photo }))
 
   return (
     <div
@@ -785,9 +902,16 @@ function PDFPreview({ form, theme }: { form: Form; theme: ThemeCfg }) {
                   <div style={{ width: 1, flex: 1, background: theme.light, margin: "4px 0", minHeight: 16 }} />
                 )}
               </div>
-              <div style={{ paddingBottom: 16 }}>
+              <div style={{ paddingBottom: 16, flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 700, color: "#111", fontSize: 12 }}>{s.t}</p>
                 <p style={{ color: "#6b7280", fontSize: 10.5, marginTop: 3, lineHeight: 1.55 }}>{s.d}</p>
+                {s.photo && (
+                  <img
+                    src={s.photo}
+                    alt=""
+                    style={{ marginTop: 10, width: "100%", maxWidth: 460, height: 150, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", display: "block" }}
+                  />
+                )}
               </div>
             </div>
           ))}
