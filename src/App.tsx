@@ -9,7 +9,8 @@ type ThemeCfg = {
   from: string; to: string; accent: string; light: string
 }
 
-type GuideStep = { id: string; title: string; desc: string; photo: string | null }
+type StepPhoto = { id: string; url: string; title: string }
+type GuideStep = { id: string; title: string; desc: string; photos: StepPhoto[] }
 
 type Form = {
   brandName: string; tagline: string
@@ -21,6 +22,8 @@ type Form = {
 
 let stepUid = 0
 const newStepId = () => `step-${Date.now()}-${stepUid++}`
+let photoUid = 0
+const newPhotoId = () => `photo-${Date.now()}-${photoUid++}`
 
 /**
  * Lit un fichier image et le redimensionne côté client (largeur max + compression JPEG)
@@ -78,9 +81,9 @@ const DEFAULT: Form = {
   guideName: "Guide de Démarrage Rapide",
   guideSubtitle: "Commencez votre parcours en 3 étapes simples",
   steps: [
-    { id: "step-default-1", title: "Accédez à votre espace", desc: "Connectez-vous et découvrez l'ensemble de vos formations disponibles en un seul endroit.", photo: null },
-    { id: "step-default-2", title: "Suivez votre programme", desc: "Progressez à votre rythme avec des modules interactifs pensés pour maximiser votre apprentissage.", photo: null },
-    { id: "step-default-3", title: "Obtenez votre certificat", desc: "Validez vos acquis et téléchargez un certificat reconnu par les professionnels du secteur.", photo: null },
+    { id: "step-default-1", title: "Accédez à votre espace", desc: "Connectez-vous et découvrez l'ensemble de vos formations disponibles en un seul endroit.", photos: [] },
+    { id: "step-default-2", title: "Suivez votre programme", desc: "Progressez à votre rythme avec des modules interactifs pensés pour maximiser votre apprentissage.", photos: [] },
+    { id: "step-default-3", title: "Obtenez votre certificat", desc: "Validez vos acquis et téléchargez un certificat reconnu par les professionnels du secteur.", photos: [] },
   ],
   whatsapp: "+33 6 12 34 56 78",
   telegram: "@academie_pro",
@@ -463,7 +466,7 @@ function StepCard({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
-  const handlePhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+  const addPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     e.target.value = ""
     if (!f) return
@@ -471,13 +474,20 @@ function StepCard({
     setUploading(true)
     try {
       const dataUrl = await resizeImageFile(f)
-      onChange({ photo: dataUrl })
+      onChange({ photos: [...step.photos, { id: newPhotoId(), url: dataUrl, title: "" }] })
     } catch (err) {
-      console.error("Échec de l'import de la photo d'étape :", err)
+      console.error("Échec de l'import d'une image d'étape :", err)
       setUploadError("Impossible de charger cette image.")
     } finally {
       setUploading(false)
     }
+  }
+
+  const updatePhoto = (id: string, patch: Partial<StepPhoto>) => {
+    onChange({ photos: step.photos.map((p) => p.id === id ? { ...p, ...patch } : p) })
+  }
+  const removePhoto = (id: string) => {
+    onChange({ photos: step.photos.filter((p) => p.id !== id) })
   }
 
   return (
@@ -516,44 +526,62 @@ function StepCard({
         />
 
         <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: c.text400 }}>
-            Photo (optionnel)
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.text400 }}>
+              Images (optionnel)
+            </label>
+            {step.photos.length > 0 && (
+              <span className="text-[10.5px]" style={{ color: c.text300 }}>
+                {step.photos.length} image{step.photos.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {step.photos.length > 0 && (
+            <div className="space-y-2 mb-2">
+              {step.photos.map((p) => (
+                <div key={p.id} className="flex items-center gap-2.5 p-2 rounded-lg border" style={{ borderColor: c.cardBorder, background: c.fieldBg }}>
+                  <img src={p.url} alt="" className="h-11 w-14 rounded-md object-cover flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={p.title}
+                    onChange={(e) => updatePhoto(p.id, { title: e.target.value })}
+                    placeholder="Légende (optionnel)"
+                    className="flex-1 min-w-0 text-[12.5px] font-medium outline-none bg-transparent"
+                    style={{ color: c.text900 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(p.id)}
+                    className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center hover:bg-red-50 transition-colors duration-150"
+                    aria-label="Retirer cette image"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 2l8 8M10 2l-8 8" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div
             onClick={() => !uploading && fileRef.current?.click()}
             className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-dashed hover:border-violet-300 cursor-pointer transition-all duration-150"
             style={{ borderColor: c.fieldBorder, background: c.fieldBg }}
           >
-            {step.photo ? (
-              <img src={step.photo} alt="" className="h-10 w-14 rounded-md object-cover flex-shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: c.mutedBg2, border: `1px solid ${c.fieldBorder}` }}>
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-                  <rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="#a1a1aa" strokeWidth="1.3" />
-                  <circle cx="5.5" cy="6.5" r="1.2" fill="#a1a1aa" />
-                  <path d="M2 11.5l3.5-3.5 2.5 2.5 2-2L14 12" stroke="#a1a1aa" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            )}
+            <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: c.mutedBg2, border: `1px solid ${c.fieldBorder}` }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 3v8M3 7h8" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[12.5px] font-medium truncate" style={{ color: c.text700 }}>
-                {uploading ? "Import en cours…" : step.photo ? "Photo importée · cliquer pour changer" : "Ajouter une illustration"}
+              <p className="text-[12.5px] font-medium" style={{ color: c.text700 }}>
+                {uploading ? "Import en cours…" : "Ajouter une image"}
               </p>
               <p className="text-[10.5px]" style={{ color: c.text400 }}>PNG, JPG — redimensionnée automatiquement</p>
             </div>
-            {step.photo && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onChange({ photo: null }) }}
-                className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center hover:bg-red-50 transition-colors duration-150"
-                aria-label="Retirer la photo de cette étape"
-              >
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 2l8 8M10 2l-8 8" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round" />
-                </svg>
-              </button>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+            <input ref={fileRef} type="file" accept="image/*" onChange={addPhoto} className="hidden" />
           </div>
           {uploadError && <p className="text-[11px] mt-1" style={{ color: "#ef4444" }}>{uploadError}</p>}
         </div>
@@ -642,7 +670,7 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
 
         <button
           type="button"
-          onClick={() => update({ steps: [...form.steps, { id: newStepId(), title: "", desc: "", photo: null }] })}
+          onClick={() => update({ steps: [...form.steps, { id: newStepId(), title: "", desc: "", photos: [] }] })}
           className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed text-[13px] font-medium text-violet-600 hover:border-violet-300 transition-all duration-150"
           style={{ borderColor: c.text300 }}
         >
@@ -826,7 +854,7 @@ function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string
 /* ─── PDF Preview ──────────────────────────── */
 
 function PDFPreview({ form, theme }: { form: Form; theme: ThemeCfg }) {
-  const items = form.steps.map((s, i) => ({ n: String(i + 1).padStart(2, "0"), t: s.title, d: s.desc, photo: s.photo }))
+  const items = form.steps.map((s, i) => ({ n: String(i + 1).padStart(2, "0"), t: s.title, d: s.desc, photos: s.photos }))
 
   return (
     <div
@@ -905,12 +933,38 @@ function PDFPreview({ form, theme }: { form: Form; theme: ThemeCfg }) {
               <div style={{ paddingBottom: 16, flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 700, color: "#111", fontSize: 12 }}>{s.t}</p>
                 <p style={{ color: "#6b7280", fontSize: 10.5, marginTop: 3, lineHeight: 1.55 }}>{s.d}</p>
-                {s.photo && (
-                  <img
-                    src={s.photo}
-                    alt=""
-                    style={{ marginTop: 10, width: "100%", maxWidth: 460, height: 150, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", display: "block" }}
-                  />
+                {s.photos.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      maxWidth: 460,
+                      display: "grid",
+                      gridTemplateColumns: s.photos.length === 1 ? "1fr" : "1fr 1fr",
+                      gap: 8,
+                    }}
+                  >
+                    {s.photos.map((p) => (
+                      <div key={p.id}>
+                        <img
+                          src={p.url}
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: s.photos.length === 1 ? 150 : 100,
+                            objectFit: "cover",
+                            borderRadius: 10,
+                            border: "1px solid rgba(0,0,0,0.06)",
+                            display: "block",
+                          }}
+                        />
+                        {p.title && (
+                          <p style={{ fontSize: 9.5, color: "#9ca3af", marginTop: 4, lineHeight: 1.35, textAlign: "center" }}>
+                            {p.title}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
