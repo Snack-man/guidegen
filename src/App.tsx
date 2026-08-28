@@ -1,4 +1,4 @@
-import { useState, useRef, type ChangeEvent } from "react"
+import { useState, useRef, useContext, createContext, type ChangeEvent } from "react"
 import { jsPDF } from "jspdf"
 import html2canvas from "html2canvas"
 
@@ -56,6 +56,77 @@ const DEFAULT: Form = {
   telegram: "@academie_pro",
   email: "bonjour@academie-pro.fr",
   logo: null,
+}
+
+/* ─── Thème clair / sombre de l'interface ──── */
+
+const UI_PALETTE = {
+  light: {
+    pageBg: "#f8f8fa",
+    panelBg: "#ffffff",
+    panelBorder: "#ebebef",
+    headerBg: "#fafafa",
+    mutedBg: "#f9f9fb",
+    mutedBg2: "#f4f4f6",
+    cardBg: "rgba(0,0,0,0.015)",
+    cardBorder: "#f0f0f0",
+    fieldBg: "#ffffff",
+    fieldBorder: "#e4e4e7",
+    text900: "#111827",
+    text700: "#374151",
+    text500: "#6b7280",
+    text400: "#9ca3af",
+    text300: "#d1d5db",
+    divider: "#f3f4f6",
+  },
+  dark: {
+    pageBg: "#0d0b1a",
+    panelBg: "#0d0b1a",
+    panelBorder: "rgba(255,255,255,0.08)",
+    headerBg: "#0d0b1a",
+    mutedBg: "rgba(255,255,255,0.03)",
+    mutedBg2: "#1e1a30",
+    cardBg: "rgba(255,255,255,0.03)",
+    cardBorder: "rgba(255,255,255,0.15)",
+    fieldBg: "#1e1a30",
+    fieldBorder: "rgba(255,255,255,0.15)",
+    text900: "#ffffff",
+    text700: "rgba(255,255,255,0.7)",
+    text500: "rgba(255,255,255,0.5)",
+    text400: "rgba(255,255,255,0.3)",
+    text300: "rgba(255,255,255,0.2)",
+    divider: "rgba(255,255,255,0.08)",
+  },
+}
+
+const UIThemeContext = createContext<{ dark: boolean; toggle: () => void; c: typeof UI_PALETTE.light }>({
+  dark: false,
+  toggle: () => {},
+  c: UI_PALETTE.light,
+})
+const useUITheme = () => useContext(UIThemeContext)
+
+function ThemeToggle() {
+  const { dark, toggle, c } = useUITheme()
+  return (
+    <button
+      onClick={toggle}
+      aria-label={dark ? "Activer le thème clair" : "Activer le thème sombre"}
+      className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-150"
+      style={{ background: c.mutedBg2, border: `1px solid ${c.panelBorder}` }}
+    >
+      {dark ? (
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3.5" stroke="#B79AF5" strokeWidth="1.4" />
+          <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.7 3.3l-1.05 1.05M4.35 11.65 3.3 12.7M12.7 12.7l-1.05-1.05M4.35 4.35 3.3 3.3" stroke="#B79AF5" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M13.5 9.5A5.8 5.8 0 0 1 6.5 2.5a5.8 5.8 0 1 0 7 7z" fill="#5B2EC9" />
+        </svg>
+      )}
+    </button>
+  )
 }
 
 /* ─── Sidebar ──────────────────────────────── */
@@ -231,23 +302,24 @@ function Field({
   placeholder?: string; multiline?: boolean
   valid?: boolean; touched?: boolean; hint?: string
 }) {
+  const { c } = useUITheme()
   const [focused, setFocused] = useState(false)
   const showVal = touched && value.length > 0
   const borderColor = focused
     ? "#5B2EC9"
     : showVal
     ? valid ? "#22c55e" : "#ef4444"
-    : "#e4e4e7"
+    : c.fieldBorder
   const shadowColor = focused ? "rgba(91,46,201,0.1)" : "transparent"
 
-  const cls = `w-full text-[13.5px] font-medium text-gray-900 placeholder-gray-300 outline-none transition-all duration-150 resize-none bg-white rounded-lg px-3.5 py-2.5`
+  const cls = `w-full text-[13.5px] font-medium outline-none transition-all duration-150 resize-none rounded-lg px-3.5 py-2.5`
 
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{label}</label>
+      <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: c.text400 }}>{label}</label>
       <div
         className="rounded-lg transition-all duration-150"
-        style={{ border: `1px solid ${borderColor}`, boxShadow: `0 0 0 3px ${shadowColor}` }}
+        style={{ border: `1px solid ${borderColor}`, boxShadow: `0 0 0 3px ${shadowColor}`, background: c.fieldBg }}
       >
         {multiline ? (
           <textarea
@@ -258,6 +330,7 @@ function Field({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             className={cls}
+            style={{ color: c.text900, background: "transparent" }}
           />
         ) : (
           <div className="flex items-center">
@@ -269,6 +342,7 @@ function Field({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               className={`${cls} pr-10`}
+              style={{ color: c.text900, background: "transparent" }}
             />
             {showVal && (
               <div className="mr-3 flex-shrink-0">
@@ -288,7 +362,7 @@ function Field({
           </div>
         )}
       </div>
-      {hint && <p className="text-[11px] text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] mt-1" style={{ color: c.text400 }}>{hint}</p>}
     </div>
   )
 }
@@ -296,6 +370,7 @@ function Field({
 /* ─── Step 0: Theme Gallery ────────────────── */
 
 function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+  const { c } = useUITheme()
   return (
     <div>
       <SectionHeader
@@ -312,7 +387,7 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
               onClick={() => onSelect(t.id)}
               className="group rounded-xl overflow-hidden text-left transition-all duration-150 focus:outline-none"
               style={{
-                border: sel ? `2px solid #5B2EC9` : "2px solid #f0f0f0",
+                border: sel ? `2px solid #5B2EC9` : `2px solid ${c.cardBorder}`,
                 boxShadow: sel ? "0 0 0 3px rgba(91,46,201,0.12)" : "none",
               }}
             >
@@ -332,9 +407,9 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
                   </div>
                 )}
               </div>
-              <div className="px-2.5 py-2 bg-white">
-                <p className="text-[12px] font-semibold text-gray-800">{t.name}</p>
-                <p className="text-[10px] text-gray-400">{t.desc}</p>
+              <div className="px-2.5 py-2" style={{ background: "#ffffff" }}>
+                <p className="text-[12px] font-semibold" style={{ color: "#1a1a1a" }}>{t.name}</p>
+                <p className="text-[10px]" style={{ color: "#9ca3af" }}>{t.desc}</p>
               </div>
             </button>
           )
@@ -347,6 +422,7 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
 /* ─── Step 1: Info Form ────────────────────── */
 
 function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<Form>) => void; touched: boolean }) {
+  const { c } = useUITheme()
   const fileRef = useRef<HTMLInputElement>(null)
   const handleLogo = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -366,25 +442,26 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
 
       {/* Logo */}
       <div className="mt-6 mb-5">
-        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Logo</label>
+        <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: c.text400 }}>Logo</label>
         <div
           onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg border border-dashed border-gray-200 hover:border-violet-300 hover:bg-violet-50/30 cursor-pointer transition-all duration-150"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg border border-dashed hover:border-violet-300 cursor-pointer transition-all duration-150"
+          style={{ borderColor: c.fieldBorder, background: c.cardBg }}
         >
           {form.logo ? (
             <img src={form.logo} alt="Logo" className="h-9 w-9 rounded-lg object-contain" />
           ) : (
-            <div className="w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: c.mutedBg2, border: `1px solid ${c.fieldBorder}` }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 3v10M3 8h10" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </div>
           )}
           <div>
-            <p className="text-[13px] font-medium text-gray-700">
+            <p className="text-[13px] font-medium" style={{ color: c.text700 }}>
               {form.logo ? "Logo importé · cliquer pour changer" : "Importer un logo"}
             </p>
-            <p className="text-[11px] text-gray-400">PNG, JPG, SVG</p>
+            <p className="text-[11px]" style={{ color: c.text400 }}>PNG, JPG, SVG</p>
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handleLogo} className="hidden" />
         </div>
@@ -401,21 +478,22 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
         </div>
       </div>
 
-      <div className="mt-5 pt-5 border-t border-gray-100">
+      <div className="mt-5 pt-5 border-t" style={{ borderColor: c.divider }}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Contenu des étapes</p>
-          <span className="text-[11px] text-gray-300">{form.steps.length} étape{form.steps.length > 1 ? "s" : ""}</span>
+          <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.text400 }}>Contenu des étapes</p>
+          <span className="text-[11px]" style={{ color: c.text300 }}>{form.steps.length} étape{form.steps.length > 1 ? "s" : ""}</span>
         </div>
         <div className="space-y-4">
           {form.steps.map((s, i) => (
-            <div key={s.id} className="rounded-xl border border-gray-100 bg-gray-50/40 p-4">
+            <div key={s.id} className="rounded-xl border p-4" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-bold text-violet-500">Étape {i + 1}</span>
                 {form.steps.length > 1 && (
                   <button
                     type="button"
                     onClick={() => update({ steps: form.steps.filter((_, idx) => idx !== i) })}
-                    className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors duration-150"
+                    className="flex items-center gap-1 text-[11px] font-medium hover:text-red-500 transition-colors duration-150"
+                    style={{ color: c.text400 }}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -448,7 +526,8 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
         <button
           type="button"
           onClick={() => update({ steps: [...form.steps, { id: newStepId(), title: "", desc: "" }] })}
-          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-gray-300 text-[13px] font-medium text-violet-600 hover:border-violet-300 hover:bg-violet-50/40 transition-all duration-150"
+          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed text-[13px] font-medium text-violet-600 hover:border-violet-300 transition-all duration-150"
+          style={{ borderColor: c.text300 }}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -463,6 +542,7 @@ function StepInfo({ form, update, touched }: { form: Form; update: (p: Partial<F
 /* ─── Step 2: Contacts ─────────────────────── */
 
 function StepContacts({ form, update, touched }: { form: Form; update: (p: Partial<Form>) => void; touched: boolean }) {
+  const { c } = useUITheme()
   return (
     <div>
       <SectionHeader
@@ -471,7 +551,7 @@ function StepContacts({ form, update, touched }: { form: Form; update: (p: Parti
         sub="Vos liens de contact apparaîtront dans le pied de page du guide sous forme de badges."
       />
       <div className="mt-6 space-y-3">
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/40">
+        <div className="flex items-start gap-3 p-4 rounded-xl border" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
           <div className="w-8 h-8 rounded-lg bg-[#25d366]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366">
               <path d="M20.52 3.48A11.93 11.93 0 0 0 12.01 0C5.38 0 .01 5.37.01 12c0 2.12.55 4.18 1.6 6L0 24l6.16-1.61A12 12 0 0 0 12 24c6.63 0 12-5.37 12-12a11.93 11.93 0 0 0-3.48-8.52zM12 22c-1.79 0-3.53-.48-5.06-1.38l-.36-.22-3.73.98.99-3.66-.24-.38A9.9 9.9 0 0 1 2 12C2 6.49 6.49 2 12 2a9.9 9.9 0 0 1 7.05 2.95A9.9 9.9 0 0 1 22 12c0 5.51-4.49 10-10 10zm5.46-7.4c-.3-.15-1.77-.87-2.04-.97-.28-.1-.48-.15-.68.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07a8.14 8.14 0 0 1-2.4-1.48 9.03 9.03 0 0 1-1.66-2.07c-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.68-1.63-.93-2.23-.24-.59-.49-.51-.68-.52h-.57c-.2 0-.52.07-.79.37-.27.3-1.03 1.01-1.03 2.46s1.06 2.86 1.2 3.06c.15.2 2.08 3.17 5.04 4.44.7.3 1.25.48 1.68.62.7.22 1.34.19 1.85.11.56-.08 1.73-.71 1.97-1.39.25-.68.25-1.27.17-1.39-.07-.12-.27-.2-.57-.35z" />
@@ -482,7 +562,7 @@ function StepContacts({ form, update, touched }: { form: Form; update: (p: Parti
           </div>
         </div>
 
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/40">
+        <div className="flex items-start gap-3 p-4 rounded-xl border" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
           <div className="w-8 h-8 rounded-lg bg-[#229ed9]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#229ed9">
               <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.94 8.19l-2.02 9.5c-.15.67-.54.83-1.09.52l-3-2.21-1.45 1.4c-.16.16-.3.3-.61.3l.21-3.06 5.52-4.98c.24-.21-.05-.33-.37-.12L6.03 13.9 3.1 13c-.66-.2-.67-.66.14-.98l11.65-4.49c.55-.2 1.03.13.85.96z" />
@@ -493,7 +573,7 @@ function StepContacts({ form, update, touched }: { form: Form; update: (p: Parti
           </div>
         </div>
 
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/40">
+        <div className="flex items-start gap-3 p-4 rounded-xl border" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
           <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5B2EC9" strokeWidth="1.5">
               <rect x="1" y="3" width="14" height="10" rx="1.5" />
@@ -512,6 +592,7 @@ function StepContacts({ form, update, touched }: { form: Form; update: (p: Parti
 /* ─── Step 3: Generation ───────────────────── */
 
 function StepGeneration({ theme, stepCount, onDownload, status }: { theme: ThemeCfg; stepCount: number; onDownload: () => void; status: "idle" | "generating" | "done" | "error" }) {
+  const { c } = useUITheme()
   return (
     <div>
       <SectionHeader
@@ -521,8 +602,8 @@ function StepGeneration({ theme, stepCount, onDownload, status }: { theme: Theme
       />
       <div className="mt-8 space-y-4">
         {/* Summary card */}
-        <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-5">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Récapitulatif</p>
+        <div className="rounded-xl border p-5" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: c.text400 }}>Récapitulatif</p>
           <div className="space-y-2">
             {[
               ["Thème", theme.name],
@@ -531,16 +612,16 @@ function StepGeneration({ theme, stepCount, onDownload, status }: { theme: Theme
               ["Contacts", "WhatsApp · Telegram · Email"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between">
-                <span className="text-[12.5px] text-gray-500">{k}</span>
-                <span className="text-[12.5px] font-semibold text-gray-800">{v}</span>
+                <span className="text-[12.5px]" style={{ color: c.text500 }}>{k}</span>
+                <span className="text-[12.5px] font-semibold" style={{ color: c.text700 }}>{v}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Checklist */}
-        <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-5">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Contenu inclus</p>
+        <div className="rounded-xl border p-5" style={{ borderColor: c.cardBorder, background: c.cardBg }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: c.text400 }}>Contenu inclus</p>
           <div className="space-y-2">
             {[
               "En-tête dégradé avec logo et badge",
@@ -556,7 +637,7 @@ function StepGeneration({ theme, stepCount, onDownload, status }: { theme: Theme
                   <circle cx="7" cy="7" r="7" fill="#5B2EC9" fillOpacity="0.12" />
                   <path d="M4 7l2 2 4-4" stroke="#5B2EC9" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span className="text-[12.5px] text-gray-600">{item}</span>
+                <span className="text-[12.5px]" style={{ color: c.text500 }}>{item}</span>
               </div>
             ))}
           </div>
@@ -615,11 +696,12 @@ function StepGeneration({ theme, stepCount, onDownload, status }: { theme: Theme
 /* ─── Section Header ───────────────────────── */
 
 function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
+  const { c } = useUITheme()
   return (
     <div>
       <span className="text-[11px] font-semibold text-violet-500 tracking-[0.16em] uppercase">{eyebrow}</span>
-      <h2 className="text-[22px] font-bold text-gray-900 mt-1 tracking-tight">{title}</h2>
-      <p className="text-[13.5px] text-gray-400 mt-1 leading-relaxed">{sub}</p>
+      <h2 className="text-[22px] font-bold mt-1 tracking-tight" style={{ color: c.text900 }}>{title}</h2>
+      <p className="text-[13.5px] mt-1 leading-relaxed" style={{ color: c.text400 }}>{sub}</p>
     </div>
   )
 }
@@ -801,7 +883,11 @@ export default function App() {
   const [touched, setTouched] = useState(false)
   const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle")
   const [mobileView, setMobileView] = useState<"form" | "preview">("form")
+  const [dark, setDark] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
+
+  const c = dark ? UI_PALETTE.dark : UI_PALETTE.light
+  const uiThemeValue = { dark, toggle: () => setDark((d) => !d), c }
 
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0]
   const update = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }))
@@ -858,7 +944,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full" style={{ fontFamily: "'Poppins', sans-serif", background: "#f8f8fa" }}>
+    <UIThemeContext.Provider value={uiThemeValue}>
+    <div className="flex flex-col lg:flex-row h-full" style={{ fontFamily: "'Poppins', sans-serif", background: c.pageBg }}>
 
       {/* ── Sidebar (desktop only) ── */}
       <Sidebar step={step} onStep={setStep} />
@@ -867,7 +954,7 @@ export default function App() {
       <MobileTopBar step={step} onStep={setStep} />
 
       {/* ── Mobile Formulaire / Aperçu switcher ── */}
-      <div className="flex lg:hidden items-center gap-2 px-4 py-2.5 border-b flex-shrink-0" style={{ borderColor: "#ebebef", background: "white" }}>
+      <div className="flex lg:hidden items-center gap-2 px-4 py-2.5 border-b flex-shrink-0" style={{ borderColor: c.panelBorder, background: c.panelBg }}>
         {(["form", "preview"] as const).map((v) => (
           <button
             key={v}
@@ -876,12 +963,13 @@ export default function App() {
             style={
               mobileView === v
                 ? { background: "linear-gradient(135deg,#5B2EC9,#B79AF5)", color: "white" }
-                : { background: "#f4f4f6", color: "#6b7280" }
+                : { background: c.mutedBg2, color: c.text500 }
             }
           >
             {v === "form" ? "Formulaire" : "Aperçu"}
           </button>
         ))}
+        <ThemeToggle />
       </div>
 
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
@@ -889,28 +977,31 @@ export default function App() {
         {/* ── Form panel ── */}
         <div
           className={`${mobileView === "preview" ? "hidden" : "flex"} lg:flex flex-col w-full lg:w-[520px] min-h-0 lg:flex-shrink-0`}
-          style={{ borderRight: "1px solid #ebebef", background: "white" }}
+          style={{ borderRight: `1px solid ${c.panelBorder}`, background: c.panelBg }}
         >
           {/* Header bar */}
-          <div className="hidden lg:flex items-center justify-between px-4 sm:px-8 py-4 border-b flex-shrink-0" style={{ borderColor: "#ebebef" }}>
+          <div className="hidden lg:flex items-center justify-between px-4 sm:px-8 py-4 border-b flex-shrink-0" style={{ borderColor: c.panelBorder }}>
             <div>
-              <p className="text-[13px] font-semibold text-gray-900">Générateur de guide</p>
-              <p className="text-[11px] text-gray-400 mt-0.5">
+              <p className="text-[13px] font-semibold" style={{ color: c.text900 }}>Générateur de guide</p>
+              <p className="text-[11px] mt-0.5" style={{ color: c.text400 }}>
                 Étape {step + 1} sur {STEPS.length} · {STEPS[step].label}
               </p>
             </div>
-            <div className="flex items-center gap-1.5">
-              {STEPS.map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: i === step ? 20 : 6,
-                    height: 6,
-                    background: i < step ? "#5B2EC9" : i === step ? "#5B2EC9" : "#e4e4e7",
-                  }}
-                />
-              ))}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                {STEPS.map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-full transition-all duration-300"
+                    style={{
+                      width: i === step ? 20 : 6,
+                      height: 6,
+                      background: i <= step ? "#5B2EC9" : c.fieldBorder,
+                    }}
+                  />
+                ))}
+              </div>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -923,11 +1014,12 @@ export default function App() {
           </div>
 
           {/* Footer nav */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-4 border-t flex-shrink-0" style={{ borderColor: "#ebebef" }}>
+          <div className="flex items-center justify-between px-4 sm:px-8 py-4 border-t flex-shrink-0" style={{ borderColor: c.panelBorder }}>
             <button
               onClick={back}
               disabled={step === 0}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all duration-150 disabled:opacity-30 disabled:pointer-events-none"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium hover:opacity-80 transition-all duration-150 disabled:opacity-30 disabled:pointer-events-none"
+              style={{ color: c.text500 }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -953,15 +1045,15 @@ export default function App() {
         {/* ── Preview panel ── */}
         <div className={`${mobileView === "form" ? "hidden" : "flex"} lg:flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden`}>
           {/* Preview header */}
-          <div className="flex items-center justify-between flex-wrap gap-2 px-4 sm:px-7 py-4 border-b flex-shrink-0" style={{ borderColor: "#ebebef", background: "#fafafa" }}>
+          <div className="flex items-center justify-between flex-wrap gap-2 px-4 sm:px-7 py-4 border-b flex-shrink-0" style={{ borderColor: c.panelBorder, background: c.headerBg }}>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <p className="text-[13px] font-semibold text-gray-700">Aperçu du guide</p>
+              <p className="text-[13px] font-semibold" style={{ color: c.text700 }}>Aperçu du guide</p>
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ background: "#dcfce7", color: "#16a34a" }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 En direct
               </div>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 border border-gray-200 bg-white">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border" style={{ color: c.text400, borderColor: c.panelBorder, background: c.panelBg }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <rect x="1" y="1" width="10" height="10" rx="1" stroke="#a1a1aa" strokeWidth="1.2" />
                 <path d="M1 4.5h10" stroke="#a1a1aa" strokeWidth="1.2" />
@@ -971,7 +1063,7 @@ export default function App() {
           </div>
 
           {/* Scrollable preview */}
-          <div className="flex-1 min-h-0 scroll-y p-4 sm:p-7" style={{ background: "#f3f3f7" }}>
+          <div className="flex-1 min-h-0 scroll-y p-4 sm:p-7" style={{ background: dark ? "#0d0b1a" : "#f3f3f7" }}>
             <PDFPreview form={form} theme={theme} />
             <div className="h-8" />
           </div>
@@ -985,5 +1077,6 @@ export default function App() {
         </div>
       </div>
     </div>
+    </UIThemeContext.Provider>
   )
 }
