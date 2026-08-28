@@ -25,7 +25,7 @@ const newStepId = () => `step-${Date.now()}-${stepUid++}`
 /* ─── Data ─────────────────────────────────── */
 
 const THEMES: ThemeCfg[] = [
-  { id:"violet", name:"Violet",          desc:"Créatif",       from:"#4f35d2", to:"#7c5cfc", accent:"#5b3df5", light:"#ede9fe" },
+  { id:"violet", name:"Violet",          desc:"Créatif",       from:"#4f35d2", to:"#B79AF5", accent:"#5B2EC9", light:"#ede9fe" },
   { id:"gold",   name:"Prestige",        desc:"Luxe",          from:"#12082e", to:"#2a1a6e", accent:"#e8af3c", light:"#fef3c7" },
   { id:"blue",   name:"Corporate",       desc:"Confiance",     from:"#0f2757", to:"#1a4fae", accent:"#3b82f6", light:"#dbeafe" },
   { id:"green",  name:"Nature",          desc:"Croissance",    from:"#0d3b1e", to:"#155e32", accent:"#22c55e", light:"#dcfce7" },
@@ -71,7 +71,7 @@ function Sidebar({ step, onStep }: { step: number; onStep: (n: number) => void }
         <div className="flex items-center gap-2.5">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#5b3df5,#7c5cfc)" }}
+            style={{ background: "linear-gradient(135deg,#5B2EC9,#B79AF5)" }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M2 10.5L5 4l3.5 5L11 6l1.5 4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -98,7 +98,7 @@ function Sidebar({ step, onStep }: { step: number; onStep: (n: number) => void }
             className="absolute left-[22px] top-4 w-px transition-all duration-500"
             style={{
               height: `${(step / (STEPS.length - 1)) * (100 - 28 / STEPS.length)}%`,
-              background: "linear-gradient(180deg,#5b3df5,#7c5cfc)",
+              background: "linear-gradient(180deg,#5B2EC9,#B79AF5)",
             }}
           />
 
@@ -110,16 +110,16 @@ function Sidebar({ step, onStep }: { step: number; onStep: (n: number) => void }
                 key={i}
                 onClick={() => onStep(i)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150 group relative"
-                style={active ? { background: "rgba(91,61,245,0.15)" } : {}}
+                style={active ? { background: "rgba(91,46,201,0.15)" } : {}}
               >
                 {/* Step indicator */}
                 <div
                   className="w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200 relative z-10"
                   style={
                     done
-                      ? { background: "#5b3df5", color: "white" }
+                      ? { background: "#5B2EC9", color: "white" }
                       : active
-                      ? { background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", color: "white", boxShadow: "0 0 0 3px rgba(91,61,245,0.25)" }
+                      ? { background: "linear-gradient(135deg,#5B2EC9,#B79AF5)", color: "white", boxShadow: "0 0 0 3px rgba(91,46,201,0.25)" }
                       : { background: "#1e1a30", color: "rgba(255,255,255,0.25)", border: "1px solid rgba(255,255,255,0.08)" }
                   }
                 >
@@ -168,7 +168,7 @@ function MobileTopBar({ step, onStep }: { step: number; onStep: (n: number) => v
         <div className="flex items-center gap-2">
           <div
             className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg,#5b3df5,#7c5cfc)" }}
+            style={{ background: "linear-gradient(135deg,#5B2EC9,#B79AF5)" }}
           >
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
               <path d="M2 10.5L5 4l3.5 5L11 6l1.5 4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -187,15 +187,15 @@ function MobileTopBar({ step, onStep }: { step: number; onStep: (n: number) => v
               key={i}
               onClick={() => onStep(i)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full flex-shrink-0 transition-all duration-150"
-              style={active ? { background: "rgba(91,61,245,0.18)" } : {}}
+              style={active ? { background: "rgba(91,46,201,0.18)" } : {}}
             >
               <div
                 className="w-[16px] h-[16px] rounded-full flex items-center justify-center flex-shrink-0 text-[8px] font-bold"
                 style={
                   done
-                    ? { background: "#5b3df5", color: "white" }
+                    ? { background: "#5B2EC9", color: "white" }
                     : active
-                    ? { background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", color: "white" }
+                    ? { background: "linear-gradient(135deg,#5B2EC9,#B79AF5)", color: "white" }
                     : { background: "#1e1a30", color: "rgba(255,255,255,0.25)", border: "1px solid rgba(255,255,255,0.08)" }
                 }
               >
@@ -234,11 +234,11 @@ function Field({
   const [focused, setFocused] = useState(false)
   const showVal = touched && value.length > 0
   const borderColor = focused
-    ? "#5b3df5"
+    ? "#5B2EC9"
     : showVal
     ? valid ? "#22c55e" : "#ef4444"
     : "#e4e4e7"
-  const shadowColor = focused ? "rgba(91,61,245,0.1)" : "transparent"
+  const shadowColor = focused ? "rgba(91,46,201,0.1)" : "transparent"
 
   const cls = `w-full text-[13.5px] font-medium text-gray-900 placeholder-gray-300 outline-none transition-all duration-150 resize-none bg-white rounded-lg px-3.5 py-2.5`
 
@@ -312,8 +312,8 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
               onClick={() => onSelect(t.id)}
               className="group rounded-xl overflow-hidden text-left transition-all duration-150 focus:outline-none"
               style={{
-                border: sel ? `2px solid #5b3df5` : "2px solid #f0f0f0",
-                boxShadow: sel ? "0 0 0 3px rgba(91,61,245,0.12)" : "none",
+                border: sel ? `2px solid #5B2EC9` : "2px solid #f0f0f0",
+                boxShadow: sel ? "0 0 0 3px rgba(91,46,201,0.12)" : "none",
               }}
             >
               <div
@@ -326,7 +326,7 @@ function StepTheme({ selected, onSelect }: { selected: string; onSelect: (id: st
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md">
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#5b3df5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#5B2EC9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
                   </div>
@@ -495,7 +495,7 @@ function StepContacts({ form, update, touched }: { form: Form; update: (p: Parti
 
         <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/40">
           <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5b3df5" strokeWidth="1.5">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5B2EC9" strokeWidth="1.5">
               <rect x="1" y="3" width="14" height="10" rx="1.5" />
               <path d="m1 4.5 7 5 7-5" />
             </svg>
@@ -553,8 +553,8 @@ function StepGeneration({ theme, stepCount, onDownload, status }: { theme: Theme
             ].map((item) => (
               <div key={item} className="flex items-center gap-2.5">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <circle cx="7" cy="7" r="7" fill="#5b3df5" fillOpacity="0.12" />
-                  <path d="M4 7l2 2 4-4" stroke="#5b3df5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="7" cy="7" r="7" fill="#5B2EC9" fillOpacity="0.12" />
+                  <path d="M4 7l2 2 4-4" stroke="#5B2EC9" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="text-[12.5px] text-gray-600">{item}</span>
               </div>
@@ -778,7 +778,7 @@ function PDFPreview({ form, theme }: { form: Form; theme: ThemeCfg }) {
             {[
               { icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="#25d366"><path d="M20.52 3.48A11.93 11.93 0 0 0 12.01 0C5.38 0 .01 5.37.01 12c0 2.12.55 4.18 1.6 6L0 24l6.16-1.61A12 12 0 0 0 12 24c6.63 0 12-5.37 12-12a11.93 11.93 0 0 0-3.48-8.52z" /></svg>, label: form.whatsapp },
               { icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="#229ed9"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.94 8.19l-2.02 9.5c-.15.67-.54.83-1.09.52l-3-2.21-1.45 1.4c-.16.16-.3.3-.61.3l.21-3.06 5.52-4.98c.24-.21-.05-.33-.37-.12L6.03 13.9 3.1 13c-.66-.2-.67-.66.14-.98l11.65-4.49c.55-.2 1.03.13.85.96z" /></svg>, label: form.telegram },
-              { icon: <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#5b3df5" strokeWidth="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5" /><path d="m1 4.5 7 5 7-5" /></svg>, label: form.email },
+              { icon: <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#5B2EC9" strokeWidth="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5" /><path d="m1 4.5 7 5 7-5" /></svg>, label: form.email },
             ].map(({ icon, label }) => (
               <div key={label} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, border: "1px solid #f0f0f0", background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                 {icon}
@@ -858,7 +858,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full" style={{ fontFamily: "'DM Sans', sans-serif", background: "#f8f8fa" }}>
+    <div className="flex flex-col lg:flex-row h-full" style={{ fontFamily: "'Poppins', sans-serif", background: "#f8f8fa" }}>
 
       {/* ── Sidebar (desktop only) ── */}
       <Sidebar step={step} onStep={setStep} />
@@ -875,7 +875,7 @@ export default function App() {
             className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold transition-all duration-150"
             style={
               mobileView === v
-                ? { background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", color: "white" }
+                ? { background: "linear-gradient(135deg,#5B2EC9,#B79AF5)", color: "white" }
                 : { background: "#f4f4f6", color: "#6b7280" }
             }
           >
@@ -907,7 +907,7 @@ export default function App() {
                   style={{
                     width: i === step ? 20 : 6,
                     height: 6,
-                    background: i < step ? "#5b3df5" : i === step ? "#5b3df5" : "#e4e4e7",
+                    background: i < step ? "#5B2EC9" : i === step ? "#5B2EC9" : "#e4e4e7",
                   }}
                 />
               ))}
@@ -939,7 +939,7 @@ export default function App() {
               <button
                 onClick={next}
                 className="flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
-                style={{ background: "linear-gradient(135deg,#5b3df5,#7c5cfc)", boxShadow: "0 2px 12px rgba(91,61,245,0.35)" }}
+                style={{ background: "linear-gradient(135deg,#5B2EC9,#B79AF5)", boxShadow: "0 2px 12px rgba(91,46,201,0.35)" }}
               >
                 Suivant
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
